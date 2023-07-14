@@ -45,9 +45,9 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
-  pinMode(2, INPUT);
+  //pinMode(2, INPUT);
 
-  //ausgabe_spielfeld ();
+  ausgabe_spielfeld ();
 }
 
 void loop() {
@@ -378,15 +378,15 @@ void ende () {
 
   if (zw8 != 56 ) {
     do {
-      strip.setPixelColor ( position_1, 0, 0, 0);
-      strip.setPixelColor ( position_2, 0, 0, 0);
-      strip.setPixelColor ( position_3, 0, 0, 0);
-      strip.setPixelColor ( position_4, 0, 0, 0);
+      setPixelColor ( position_1, 0, 0, 0);
+      setPixelColor ( position_2, 0, 0, 0);
+      setPixelColor ( position_3, 0, 0, 0);
+      setPixelColor ( position_4, 0, 0, 0);
       strip.show(); delay(200);
-      strip.setPixelColor ( position_1, farbe_1);
-      strip.setPixelColor ( position_2, farbe_1);
-      strip.setPixelColor ( position_3, farbe_1);
-      strip.setPixelColor ( position_4, farbe_1);
+      setPixelColor ( position_1, farbe_1);
+      setPixelColor ( position_2, farbe_1);
+      setPixelColor ( position_3, farbe_1);
+      setPixelColor ( position_4, farbe_1);
       strip.show(); delay(200);
       zw11++;
     }
@@ -395,8 +395,8 @@ void ende () {
 
   zw9 = 0;
   do {
-    strip.setPixelColor ( zw9, farbe_1); zw9++;
-    strip.setPixelColor ( zw9, farbe_2); zw9++;
+    setPixelColor ( zw9, farbe_1); zw9++;
+    setPixelColor ( zw9, farbe_2); zw9++;
   }
   while (zw9 != 64);
   strip.show();
@@ -407,7 +407,7 @@ void ende () {
 
   zw10 = 0;
   do {
-    strip.setPixelColor ( zw10, 0, 0, 0); spielfeld [zw10] = 0;
+    setPixelColor ( zw10, 0, 0, 0); spielfeld [zw10] = 0;
     zw10++;
   }
   while ( zw10 != 64);
@@ -482,18 +482,34 @@ void ausgabe_spielfeld () {
   do {
     zw2 = spielfeld [zw1];
     if (zw2 == 0) {
-      strip.setPixelColor ( zw1, 0, 0, 0);
+      setPixelColor ( zw1, 0, 0, 0);
     };
     if (zw2 == 1) {
-      strip.setPixelColor ( zw1, rot);
+      setPixelColor ( zw1, rot);
     };
     if (zw2 == 2) {
-      strip.setPixelColor ( zw1, gruen);
+      setPixelColor ( zw1, gruen);
     };
     zw1++;
   }
   while (zw1 != 64);
   strip.show();
+}
+
+void setPixelColor(int pos, int r, int g, int b) {
+  int row = pos / 8;
+  int indexInRow = pos % 8;
+  if(row % 2 == 1)
+    indexInRow = (8-1) - indexInRow;
+  strip.setPixelColor(row*8+indexInRow, 0, 0, 0);
+}
+
+void setPixelColor(int pos, long rgb) {
+  int row = pos / 8;
+  int indexInRow = pos % 8;
+  if(row % 2 == 1)
+    indexInRow = (8-1) - indexInRow;
+  strip.setPixelColor(row*8+indexInRow, rgb);
 }
 
 // HUK Vier_gewinnt_4.4  27.07.2021
