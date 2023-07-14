@@ -45,42 +45,32 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
-  //pinMode(rechts, INPUT); digitalWrite (rechts, HIGH);
-  //pinMode(links, INPUT); digitalWrite (links, HIGH);
-  //pinMode(runter, INPUT); digitalWrite (runter, HIGH);
+  pinMode(2, INPUT);
 
   //ausgabe_spielfeld ();
 }
 
 void loop() {
-  // read analog X and Y analog values
-  int xValue = analogRead(VRX_PIN);
-  int yValue = analogRead(VRY_PIN);
+  do {
+    int xValue = analogRead(VRX_PIN) - 512;
+    int yValue = analogRead(VRY_PIN) - 512;
+    bool pressed = false;//digitalRead(2);
 
-  // print data to Serial Monitor on Arduino IDE
-  Serial.print("x = ");
-  Serial.print(xValue);
-  Serial.print(", y = ");
-  Serial.println(yValue);
-  delay(200);
-}
+    bool right = xValue >= 100;
+    bool left = xValue <= -100;
+    bool down = yValue <= -100;
 
-  delay(50);
-
-  // Abfrage Tastatur und Sprung in entsprechendes Programm
-  /*do {
-    
-    if (digitalRead(rechts) == LOW && digitalRead(links) == LOW) {
+    if (right && left) {
       zw8 = 56;
       test_spielende ();
     };
-    if ( digitalRead(rechts) == LOW) {
+    if (right) {
       richtung = 1; rechts_0 ();
     }
-    if ( digitalRead(links) == LOW) {
+    if (left) {
       richtung = 2; links_0 ();
     }
-    if ( digitalRead(runter) == LOW) {
+    if (down) {
       if (spielfeld [position_0 + 8] == 0) {
         richtung = 3;
         runter_0 (); zw8 ++; // Anzahl Durchlaeufe + 1
@@ -90,8 +80,6 @@ void loop() {
   }
   while ( richtung == 0);
   richtung = 0; // Loeschender Richtung
-  */
-
 
   ausgabe_spielfeld ();
   delay(300);
