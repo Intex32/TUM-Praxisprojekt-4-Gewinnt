@@ -4,9 +4,9 @@ int LED_COUNT = 64;
 int LED_PIN = 8;
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
-long rot = strip.Color(5, 0, 0);
-long gruen = strip.Color(0, 5, 0);
-long farbe = 0;
+int brightness = 128; // 256
+long rot = strip.Color(brightness, 0, 0);
+long gruen = strip.Color(0, 0, brightness);
 long black = strip.Color(0, 0, 0);
 
 byte zw1 = 0; int zw2 = 0; // werden in "Ausgabe Spielfeld" benutzt
@@ -19,6 +19,7 @@ byte zw8 = 0; // Gefallene Steine
 byte zw9 = 0; // Ausgabe Siegerfarbe
 byte zw10 = 0; //Loeschen Anzeige und Spielfeld
 byte zw11 = 0; //Blinken Siegersteine
+long farbe = 0;
 long farbe_1 = 0; long farbe_2 = 0; // Siegerfarbe
 byte position_1 = 0; byte position_2 = 0; byte position_3 = 0; byte position_4 = 0; //Position Gewinnersteine
 
@@ -43,6 +44,8 @@ byte test_rot = 0; byte test_gruen = 0; byte sieger = 0; // Benoetigt zum Ermitt
 #define VRX_PIN  A0 // Arduino pin connected to VRX pin
 #define VRY_PIN  A1 // Arduino pin connected to VRY pin
 int joystickThreshold = 375;
+int joystickButtonPin = 2;
+bool joystickButtonPressed = false;
 
 void setPixelColor(int pos, long rgb) {
   int row0 = pos / 8;
@@ -58,9 +61,9 @@ void setup() {
   Serial.begin(9600);
 
   strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
+  strip.show();
 
-  pinMode(2, INPUT);
+  pinMode(joystickButtonPin, INPUT_PULLUP);
 
   ausgabe_spielfeld ();
 }
@@ -69,12 +72,22 @@ void loop() {
   do {
     int xValue = analogRead(VRX_PIN) - 512;
     int yValue = analogRead(VRY_PIN) - 512;
-    bool pressed = digitalRead(2) == HIGH;
-    Serial.println(xValue);
+    bool pressed = digitalRead(joystickButtonPin) == LOW;
+    Serial.println(pressed);
 
     bool right = xValue <= -joystickThreshold;
     bool left = xValue >= joystickThreshold;
     bool down = yValue >= joystickThreshold;
+
+    if(pressed && !joystickButtonPressed) {
+      for(int i = 0; i < LED_COUNT; i++) {
+        strip.setPixelColor(i, rot);
+      }
+      strip.show();
+      delay(500);
+      ausgabe_spielfeld();
+    }
+    joystickButtonPressed = pressed;
 
     if (right && left) {
       zw8 = 56;
