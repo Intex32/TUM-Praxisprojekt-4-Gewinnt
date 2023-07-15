@@ -1,8 +1,14 @@
 #include <Adafruit_NeoPixel.h>
-int anzahl = 64;
-Adafruit_NeoPixel strip(anzahl, 8, NEO_GRB + NEO_KHZ800);
 
-long rot = strip.Color(5, 0, 0); long gruen = strip.Color(0, 5, 0); long farbe = 0;
+int LED_COUNT = 64;
+int LED_PIN = 8;
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+long rot = strip.Color(5, 0, 0);
+long gruen = strip.Color(0, 5, 0);
+long farbe = 0;
+long black = strip.Color(0, 0, 0);
+
 byte zw1 = 0; int zw2 = 0; // werden in "Ausgabe Spielfeld" benutzt
 byte zw3 = 0; // wird in Absenken der Spielsteine benutzt
 byte zw4 = 0; // Startfeld beim Testen
@@ -28,8 +34,6 @@ byte spielfeld [64] = {
   0, 0, 0, 0, 0, 0, 0, 0
 };
 
-byte rechts = 10; byte links = 9; byte runter = 8; // Nummer der benoetigten Ports
-
 byte richtung = 0 ; // 1 -> rechts; 2 -> links; 3 -> runter
 byte status_start = 1; // 1 -> rot; 2 -> gruen
 byte status_spiel = 1 ; // 1 -> rot; 2 -> gruen
@@ -38,6 +42,17 @@ byte test_rot = 0; byte test_gruen = 0; byte sieger = 0; // Benoetigt zum Ermitt
 
 #define VRX_PIN  A0 // Arduino pin connected to VRX pin
 #define VRY_PIN  A1 // Arduino pin connected to VRY pin
+int joystickThreshold = 375;
+
+void setPixelColor(int pos, long rgb) {
+  int row0 = pos / 8;
+  int col0 = pos % 8;
+  int row = 7 - col0;
+  int indexInRow = (8-1) - row0;
+  if(row % 2 == 1)
+    indexInRow = (8-1) - indexInRow;
+  strip.setPixelColor(row*8+indexInRow, rgb);
+}
 
 void setup() {
   Serial.begin(9600);
@@ -45,7 +60,7 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
-  //pinMode(2, INPUT);
+  pinMode(2, INPUT);
 
   ausgabe_spielfeld ();
 }
@@ -54,10 +69,9 @@ void loop() {
   do {
     int xValue = analogRead(VRX_PIN) - 512;
     int yValue = analogRead(VRY_PIN) - 512;
-    bool pressed = false;//digitalRead(2);
+    bool pressed = digitalRead(2) == HIGH;
     Serial.println(xValue);
 
-    int joystickThreshold = 375;
     bool right = xValue <= -joystickThreshold;
     bool left = xValue >= joystickThreshold;
     bool down = yValue >= joystickThreshold;
@@ -380,10 +394,10 @@ void ende () {
 
   if (zw8 != 56 ) {
     do {
-      setPixelColor ( position_1, 0, 0, 0);
-      setPixelColor ( position_2, 0, 0, 0);
-      setPixelColor ( position_3, 0, 0, 0);
-      setPixelColor ( position_4, 0, 0, 0);
+      setPixelColor ( position_1, black);
+      setPixelColor ( position_2, black);
+      setPixelColor ( position_3, black);
+      setPixelColor ( position_4, black);
       strip.show(); delay(200);
       setPixelColor ( position_1, farbe_1);
       setPixelColor ( position_2, farbe_1);
@@ -409,7 +423,7 @@ void ende () {
 
   zw10 = 0;
   do {
-    setPixelColor ( zw10, 0, 0, 0); spielfeld [zw10] = 0;
+    setPixelColor ( zw10, black); spielfeld [zw10] = 0;
     zw10++;
   }
   while ( zw10 != 64);
@@ -484,7 +498,7 @@ void ausgabe_spielfeld () {
   do {
     zw2 = spielfeld [zw1];
     if (zw2 == 0) {
-      setPixelColor ( zw1, 0, 0, 0);
+      setPixelColor ( zw1, black);
     };
     if (zw2 == 1) {
       setPixelColor ( zw1, rot);
@@ -497,25 +511,3 @@ void ausgabe_spielfeld () {
   while (zw1 != 64);
   strip.show();
 }
-
-void setPixelColor(int pos, int r, int g, int b) {
-  int row0 = pos / 8;
-  int col0 = pos % 8;
-  int row = 7 - col0;
-  int indexInRow = (8-1) - row0;
-  if(row % 2 == 1)
-    indexInRow = (8-1) - indexInRow;
-  strip.setPixelColor(row*8+indexInRow, 0, 0, 0);
-}
-
-void setPixelColor(int pos, long rgb) {
-  int row0 = pos / 8;
-  int col0 = pos % 8;
-  int row = 7 - col0;
-  int indexInRow = (8-1) - row0;
-  if(row % 2 == 1)
-    indexInRow = (8-1) - indexInRow;
-  strip.setPixelColor(row*8+indexInRow, rgb);
-}
-
-// HUK Vier_gewinnt_4.4  27.07.2021
