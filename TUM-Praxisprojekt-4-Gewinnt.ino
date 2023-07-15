@@ -55,10 +55,12 @@ void loop() {
     int xValue = analogRead(VRX_PIN) - 512;
     int yValue = analogRead(VRY_PIN) - 512;
     bool pressed = false;//digitalRead(2);
+    Serial.println(xValue);
 
-    bool right = xValue >= 100;
-    bool left = xValue <= -100;
-    bool down = yValue <= -100;
+    int joystickThreshold = 375;
+    bool right = xValue <= -joystickThreshold;
+    bool left = xValue >= joystickThreshold;
+    bool down = yValue >= joystickThreshold;
 
     if (right && left) {
       zw8 = 56;
@@ -497,16 +499,20 @@ void ausgabe_spielfeld () {
 }
 
 void setPixelColor(int pos, int r, int g, int b) {
-  int row = pos / 8;
-  int indexInRow = pos % 8;
+  int row0 = pos / 8;
+  int col0 = pos % 8;
+  int row = 7 - col0;
+  int indexInRow = (8-1) - row0;
   if(row % 2 == 1)
     indexInRow = (8-1) - indexInRow;
   strip.setPixelColor(row*8+indexInRow, 0, 0, 0);
 }
 
 void setPixelColor(int pos, long rgb) {
-  int row = pos / 8;
-  int indexInRow = pos % 8;
+  int row0 = pos / 8;
+  int col0 = pos % 8;
+  int row = 7 - col0;
+  int indexInRow = (8-1) - row0;
   if(row % 2 == 1)
     indexInRow = (8-1) - indexInRow;
   strip.setPixelColor(row*8+indexInRow, rgb);
