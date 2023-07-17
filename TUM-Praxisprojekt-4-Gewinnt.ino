@@ -1,26 +1,25 @@
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 8
-#define NUMPIXELS 64
+#define PIN 8 // led matrix pin
+#define PIXEL_COUNT 64
 
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(PIXEL_COUNT, PIN, NEO_GRB + NEO_KHZ800);
 
-#define VRX_PIN A0 // Arduino pin connected to VRX pin
-#define VRY_PIN A1 // Arduino pin connected to VRY pin
+#define VRX_PIN A0
+#define VRY_PIN A1
 int joystickThreshold = 375;
 int joystickButtonPin = 2;
 
 
-int board[NUMPIXELS];
+int board[PIXEL_COUNT];
 
-//RGB LED values for player 1 (index 0) and player 2 (index 1)
-//Player 1 = RED, Player 2 = BLUE
+// player 1 (index 0, red); player 2 (index 1, blue)
 int r[2] = { 255, 0 };
 int g[2] = { 0, 0 };
 int b[2] = { 0, 255 };
 
 boolean demoMode = true;
-int whoGoesFirst = 1;
+int playerWhoStarts = 1;
 
 void setup() {
   pixels.begin();
@@ -33,27 +32,11 @@ void setup() {
   checkSwapGameMode();
 }
 
-void checkSwapGameMode() {
-  bool pressed = digitalRead(joystickButtonPin) == LOW;
-  if (pressed) {
-    for (int i = 0; i < NUMPIXELS; i++) {
-      pixels.setPixelColor(i, pixels.Color(32, 32, 32));
-    }
-    pixels.show();
-    delay(200);
-    clearBoard();
-
-    demoMode = !demoMode;
-    Serial.print("Demo mode: ");
-    Serial.println(demoMode);
-  }
-}
-
 void loop() {
   if (demoMode) {
     runDemo();
   } else {
-    twoPlayerGame();
+    multiplayerGame();
   }
   delay(100);
   checkSwapGameMode();
@@ -70,6 +53,22 @@ void setPixelColor(int pos, long rgb) {
   pixels.setPixelColor(row * 8 + indexInRow, rgb);
 }
 
+void checkSwapGameMode() {
+  bool pressed = digitalRead(joystickButtonPin) == LOW;
+  if (pressed) {
+    for (int i = 0; i < PIXEL_COUNT; i++) {
+      pixels.setPixelColor(i, pixels.Color(32, 32, 32));
+    }
+    pixels.show();
+    delay(200);
+    clearBoard();
+
+    demoMode = !demoMode;
+    Serial.print("Demo mode: ");
+    Serial.println(demoMode);
+  }
+}
+
 void showPixel(int player, int location) {
   setPixelColor(location, pixels.Color(r[player - 1], g[player - 1], b[player - 1]));
   pixels.show();
@@ -82,8 +81,7 @@ void movePixel(int player, int currentLoc, int nextLoc) {
 }
 
 
-int isButtonPressed() {
-
+int checkInput() {
   int xValue = analogRead(VRX_PIN) - 512;
   int yValue = analogRead(VRY_PIN) - 512;
   bool pressed = digitalRead(joystickButtonPin) == LOW;
@@ -102,7 +100,6 @@ int isButtonPressed() {
 }
 
 int dropChip(int currentLoc, int player) {
-
   boolean notOccupied = true;
   int checkLoc = currentLoc + 8;
   int prevLoc;
@@ -127,8 +124,7 @@ int dropChip(int currentLoc, int player) {
   return currentLoc;
 }
 
-void showConnect4(int connect4[]) {
-
+void highlightWinner(int connect4[]) {
   int player = board[connect4[0]];
 
   // light up four times
@@ -147,14 +143,14 @@ void showConnect4(int connect4[]) {
 }
 
 void clearBoard() {
-  for (int i = 0; i < NUMPIXELS; i++) {
+  for (int i = 0; i < PIXEL_COUNT; i++) {
     board[i] = 0;
     setPixelColor(i, pixels.Color(0, 0, 0));
   }
   pixels.show();
 }
 
-void melt() {
+void showMeltingAnimation() {
   int color;
 
   for (int k = 0; k <= 7; k++) {
@@ -185,8 +181,8 @@ void melt() {
 }
 
 
-void twoPlayerGame() {
-  int whoseTurn = whoGoesFirst;
+void multiplayerGame() {
+  int whoseTurn = playerWhoStarts;
 
   while (!endGame(whoseTurn)) {
     if (whoseTurn == 1) {
@@ -196,18 +192,17 @@ void twoPlayerGame() {
     }
   }
 
-  melt();
+  showMeltingAnimation();
 
   // looser starts next game
   if (whoseTurn == 1) {
-    whoGoesFirst = 2;
+    playerWhoStarts = 2;
   } else {
-    whoGoesFirst = 1;
+    playerWhoStarts = 1;
   }
 }
 
-int startingSpot(int player) {
-
+int findStartingSlot(int player) {
   int i = 0;
   int pixelLoc;
   int prevLoc;
@@ -247,14 +242,14 @@ int startingSpot(int player) {
 
 boolean endGame(int player) {
   int prevLoc;
-  int pixelLoc = startingSpot(player);
+  int pixelLoc = findStartingSlot(player);
 
   if (pixelLoc == 9) {
     Serial.println("No more place to play. Game Over");
     return true;
   }
 
-  int WhichButton = isButtonPressed();
+  int WhichButton = checkInput();
 
   while (WhichButton != 2) {
     boolean okToMove = false;
@@ -292,7 +287,7 @@ boolean endGame(int player) {
     }
 
     delay(1);
-    WhichButton = isButtonPressed();
+    WhichButton = checkInput();
   }
 
   if (WhichButton == 2) {
@@ -310,7 +305,7 @@ boolean endGame(int player) {
 void runDemo() {
   randomPlay(50);
   delay(1000);
-  melt();
+  showMeltingAnimation();
   delay(500);
 }
 
@@ -354,20 +349,20 @@ int randomColumn() {
 
 boolean isWinningMove(int player, int playedLoc) {
   int connected[4];
-  if (chkVericalWin(player, playedLoc)) {
+  if (checkWinVertical(player, playedLoc)) {
     return true;
-  } else if (chkHorizontalWin(player, playedLoc)) {
+  } else if (checkWinHorizontal(player, playedLoc)) {
     return true;
-  } else if (chkDiagonalWin(player, playedLoc)) {
+  } else if (checkWinDiagonal(player, playedLoc)) {
     return true;
-  } else if (chkDiagonalWin2(player, playedLoc)) {
+  } else if (checkWinDiagonal2(player, playedLoc)) {
     return true;
   } else {
     return false;
   }
 }
 
-boolean chkVericalWin(int player, int playedLoc) {
+boolean checkWinVertical(int player, int playedLoc) {
   int connected[4];
 
   if ((playedLoc < 40) && (board[playedLoc + 8] == player) && (board[playedLoc + 16] == player) && (board[playedLoc + 24] == player)) {
@@ -375,14 +370,14 @@ boolean chkVericalWin(int player, int playedLoc) {
     connected[1] = playedLoc + 8;
     connected[2] = playedLoc + 16;
     connected[3] = playedLoc + 24;
-    showConnect4(connected);
+    highlightWinner(connected);
     return true;
   } else {
     return false;
   }
 }
 
-boolean chkDiagonalWin2(int player, int playedLoc) {
+boolean checkWinDiagonal2(int player, int playedLoc) {
   int connected[4] = { 0, 0, 0, 0 };
   int connectedIndex = 0;
   connected[connectedIndex] = playedLoc;
@@ -402,7 +397,7 @@ boolean chkDiagonalWin2(int player, int playedLoc) {
       connected[connectedIndex] = chkLoc;
 
       if (connectedIndex >= 3) {
-        showConnect4(connected);
+        highlightWinner(connected);
         return true;
       }
 
@@ -431,7 +426,7 @@ boolean chkDiagonalWin2(int player, int playedLoc) {
       connected[connectedIndex] = chkLoc;
 
       if (connectedIndex >= 3) {
-        showConnect4(connected);
+        highlightWinner(connected);
         return true;
       }
 
@@ -448,7 +443,7 @@ boolean chkDiagonalWin2(int player, int playedLoc) {
   return false;
 }
 
-boolean chkDiagonalWin(int player, int playedLoc) {
+boolean checkWinDiagonal(int player, int playedLoc) {
   int connected[4] = { 0, 0, 0, 0 };
   int connectedIndex = 0;
   connected[connectedIndex] = playedLoc;
@@ -468,7 +463,7 @@ boolean chkDiagonalWin(int player, int playedLoc) {
       connected[connectedIndex] = chkLoc;
 
       if (connectedIndex >= 3) {
-        showConnect4(connected);
+        highlightWinner(connected);
         return true;
       }
 
@@ -496,7 +491,7 @@ boolean chkDiagonalWin(int player, int playedLoc) {
       connected[connectedIndex] = chkLoc;
 
       if (connectedIndex >= 3) {
-        showConnect4(connected);
+        highlightWinner(connected);
         return true;
       }
 
@@ -513,7 +508,7 @@ boolean chkDiagonalWin(int player, int playedLoc) {
   return false;
 }
 
-boolean chkHorizontalWin(int player, int playedLoc) {
+boolean checkWinHorizontal(int player, int playedLoc) {
   int connected[4];
   int connectedIndex = 0;
   connected[connectedIndex] = playedLoc;
@@ -529,7 +524,7 @@ boolean chkHorizontalWin(int player, int playedLoc) {
       connected[connectedIndex] = chkLoc;
 
       if (connectedIndex >= 3) {
-        showConnect4(connected);
+        highlightWinner(connected);
         return true;
       }
     } else {
@@ -549,7 +544,7 @@ boolean chkHorizontalWin(int player, int playedLoc) {
       connected[connectedIndex] = chkLoc;
 
       if (connectedIndex >= 3) {
-        showConnect4(connected);
+        highlightWinner(connected);
         return true;
       }
     } else {
